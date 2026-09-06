@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sonhoang2.task_service.common.dto.JSendResponse;
 import com.sonhoang2.task_service.common.exception.ResourceConflictException;
+import com.sonhoang2.common.exception.RateLimitExceededException;
 import feign.FeignException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -183,6 +184,20 @@ public class GlobalExceptionHandler {
                 message,
                 data
         );
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<JSendResponse<Map<String, Object>>> handleRateLimit(
+            RateLimitExceededException ex,
+            HttpServletRequest request) {
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("timestamp", Instant.now());
+        data.put("path", request.getRequestURI());
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+                .body(JSendResponse.error(ex.getMessage(), HttpStatus.TOO_MANY_REQUESTS.value(), data));
     }
 
     @ExceptionHandler(Exception.class)

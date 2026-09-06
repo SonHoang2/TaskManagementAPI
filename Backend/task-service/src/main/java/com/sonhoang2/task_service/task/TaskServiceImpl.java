@@ -19,6 +19,7 @@ import com.sonhoang2.task_service.task.dto.TaskUpdateRequest;
 import com.sonhoang2.task_service.task.entity.Task;
 import com.sonhoang2.task_service.task.entity.TaskStatus;
 import com.sonhoang2.task_service.tasklabel.entity.TaskLabel;
+import com.sonhoang2.common.ratelimit.RateLimit;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -72,6 +73,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @RateLimit(points = 150, durationSeconds = 60, keyPrefix = "task:list")
     public PageResponse<TaskResponse> findAll(String status, String keyword, Pageable pageable) {
         Page<Task> page;
 
@@ -92,6 +94,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
+    @RateLimit(points = 150, durationSeconds = 60, keyPrefix = "task:list")
     public TaskResponse findById(UUID id) {
         return toResponse(findTaskByIdOrThrow(id));
     }
@@ -144,6 +147,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional(readOnly = true)
+    @RateLimit(points = 150, durationSeconds = 60, keyPrefix = "task:list")
     public PageResponse<TaskDetailResponse> findByProjectId(UUID projectId, Pageable pageable) {
         Page<Task> taskPage = taskRepository.findByProjectId(projectId, pageable);
         List<Task> tasks = taskPage.getContent();

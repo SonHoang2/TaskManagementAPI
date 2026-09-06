@@ -1,9 +1,11 @@
 package com.sonhoang2.userservice.auth;
 
+import com.sonhoang2.common.dto.JSendResponse;
+import com.sonhoang2.common.exception.RateLimitExceededException;
 import com.sonhoang2.userservice.auth.dto.LoginRequest;
 import com.sonhoang2.userservice.auth.dto.LoginResponse;
 import com.sonhoang2.userservice.auth.dto.RegisterRequest;
-import com.sonhoang2.common.dto.JSendResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,15 +23,28 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final AuthRateLimitService authRateLimitService;
 
     @PostMapping("/login")
-    public ResponseEntity<JSendResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<JSendResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request,
+                                                               HttpServletRequest httpRequest) {
+        String ip = httpRequest.getRemoteAddr();
+        long retryAfter = authRateLimitService.checkRateLimit(ip);
+        if (retryAfter > 0) {
+            throw new RateLimitExceededException("Too many login attempts. Try again later.", retryAfter);
+        }
         LoginResponse response = authService.login(request);
         return ResponseEntity.ok(JSendResponse.success(response));
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<JSendResponse<LoginResponse>> signup(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<JSendResponse<LoginResponse>> signup(@Valid @RequestBody RegisterRequest request,
+                                                               HttpServletRequest httpRequest) {
+        String ip = httpRequest.getRemoteAddr();
+        long retryAfter = authRateLimitService.checkRateLimit(ip);
+        if (retryAfter > 0) {
+            throw new RateLimitExceededException("Too many signup attempts. Try again later.", retryAfter);
+        }
         LoginResponse response = authService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(JSendResponse.success(response));
     }

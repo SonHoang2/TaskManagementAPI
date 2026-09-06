@@ -27,6 +27,7 @@ import com.sonhoang2.project_service.project.entity.ProjectMember;
 import com.sonhoang2.project_service.project.entity.ProjectMemberRole;
 import com.sonhoang2.project_service.project.feign.TaskServiceClient;
 import com.sonhoang2.project_service.project.feign.UserServiceClient;
+import com.sonhoang2.common.ratelimit.RateLimit;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -64,6 +65,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
+    @RateLimit(points = 150, durationSeconds = 60, keyPrefix = "project:list")
     public PageResponse<ProjectDetailResponse> listAllProject(Pageable pageable,
                                                               UUID userId,
                                                               ListProjectRequest request) {
@@ -139,6 +141,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
+    @RateLimit(points = 150, durationSeconds = 60, keyPrefix = "project:list")
     public ProjectResponse getProjectById(UUID id, UUID userId) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project with id " + id + " not found"));
@@ -152,6 +155,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
+    @RateLimit(points = 15, durationSeconds = 60, keyPrefix = "project:invite")
     public ProjectInvitationResponse inviteMember(UUID projectId, InviteMemberRequest request, UUID userId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project with id " + projectId + " not found"));
@@ -269,6 +273,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
+    @RateLimit(points = 150, durationSeconds = 60, keyPrefix = "project:list")
     public PageResponse<ProjectDetailResponse> getMyProjects(Pageable pageable,
                                                              UUID userId,
                                                              ListProjectRequest request) {
@@ -346,6 +351,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional(readOnly = true)
+    @RateLimit(points = 150, durationSeconds = 60, keyPrefix = "project:list")
     public PageResponse<Map<String, Object>> getProjectTasks(UUID projectId, UUID userId, Pageable pageable) {
         // Verify that the requesting user is a member
         if (!projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)) {
